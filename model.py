@@ -1,11 +1,11 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-class AlexNet(nn.Module):
+class GoogLeNet(nn.Module):
     """ A implementation of the GoogLeNet architecture from the paper '' """
     def __init__(self, n_class):
         super().__init__()
-        self.train = True
+        self.training = True
         
         # Layers 1 to 4
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, padding_mode='reflect') 
@@ -19,18 +19,18 @@ class AlexNet(nn.Module):
         
         # Optional Classifcation Path 1
         self.redu2 = nn.Conv2d(512,128, kernel_size=1,stride=1)
-        self.fc1(128*4*4,1024)
-        self.fc2(1024, n_class)
+        self.fc1 = nn.Linear(128*4*4,1024)
+        self.fc2 = nn.Linear(1024, n_class)
         
         # Layers 9 to 11
         self.incept4 = Inception(512,160,(112,224),(24,64),64)
         self.incept5 = Inception(512,128,(128,256),(24,64),64)
-        self.incept6 = Inception(512,112,(144,288),(32,64)64)
+        self.incept6 = Inception(512,112,(144,288),(32,64),64)
         
         # Optional Classifcation Path 2
         self.redu3 = nn.Conv2d(528,128, kernel_size=1,stride=1)
-        self.fc3(128*4*4,1024)
-        self.fc4(1024, n_class) 
+        self.fc3 = nn.Linear(128*4*4,1024)
+        self.fc4 = nn.Linear(1024, n_class) 
         
         # Layers 12 to 15
         self.incept7 = Inception(528,256,(160,320),(32,128),128)
@@ -38,7 +38,7 @@ class AlexNet(nn.Module):
         self.incept9 = Inception(832,384,(192,384),(48,128),128)
         
         # Final Classifcation Path
-        self.fc5(1024,n_class)
+        self.fc5 = nn.Linear(1024,n_class)
         
         # Unparamartried (spelling?) layers
         self.avg_pool1 = nn.AvgPool2d(5, stride=3)
@@ -52,7 +52,7 @@ class AlexNet(nn.Module):
     def forward(self, x):
         # Layers 1 to 4
         x = F.relu(self.conv1(x))
-        x = self.lrn(self.pool(x))
+        x = self.lrn(self.max_pool(x))
         x = F.relu(self.redu1(x))
         x = F.relu(self.conv2(x))
         x = self.max_pool(self.lrn(x))
@@ -99,7 +99,7 @@ class AlexNet(nn.Module):
         # softmax?
         
         if train:
-            return x1, x2, x3
+            return (x1, x2, x)
         else:
             return x
 
@@ -114,7 +114,7 @@ class Inception(nn.Module):
         self.conv1 = nn.Conv2d(dims_3[0], dims_3[1], kernel_size=3, stride=1, padding=1, padding_mode='reflect')
         # 5x5 Convolution Path
         self.redu3 = nn.Conv2d(dim_in, dims_5[1], kernel_size=1, stride=1)
-        self.conv2 = nn.Conv2d(dims_5[0]], dims_5[1], kernel_size=5, stride=1, padding=1, padding_mode='reflect')
+        self.conv2 = nn.Conv2d(dims_5[0], dims_5[1], kernel_size=5, stride=1, padding=1, padding_mode='reflect')
         # Max-Pool Path
         self.pool  = nn.MaxPool2d(3,2)
         self.redu4 = nn.Conv2d(dim_in, dim_pool, kernel_size=1,stride=1)
@@ -136,5 +136,5 @@ class Inception(nn.Module):
         x4 = F.relu(self.redu4(x))
 
         #  Concatenate the resulting tensors
-        
+        x = torch.cat((x1,x2,x3,x4),0) 
         return x

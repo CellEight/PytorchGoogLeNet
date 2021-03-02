@@ -7,7 +7,7 @@ from torchvision import datasets
 from torchvision import transforms
 import numpy as np
 import pickle
-from model import AlexNet
+from model import GoogLeNet 
 
 # Select device to train on
 device = torch.device("cuda")
@@ -16,6 +16,8 @@ def train(model, train_dl, test_dl, opt, loss_func, epochs):
     """ train model using using provided datasets, optimizer and loss function """
     train_loss = [0 for i in range(epochs)]
     test_loss = [0 for i in range(epochs)]
+    
+    model.to(device)
     
     for epoch in range(epochs):
         model.train()
@@ -27,7 +29,7 @@ def train(model, train_dl, test_dl, opt, loss_func, epochs):
             loss.backward()
             opt.step()
             opt.zero_grad()
-        
+        print("Finished the epoch! Any errors from here on are to do with the test vs train modes") 
         with torch.no_grad():
             losses, nums = zip(*[(loss_func(model(xb.to(device)),yb.to(device)).item(),len(xb.to(device))) for xb, yb in test_dl])
             test_loss[epoch] = np.sum(np.multiply(losses, nums)) / np.sum(nums)
@@ -59,8 +61,8 @@ if __name__ == "__main__":
     # Train Model
     # Some modification will be required here due to the somewhat strange method of training for googlenet
     epochs = 25
-    model = GoogLeNet().to(device)
-    loss_func = nn.CrossEntropyLoss() # Maybe be able to address all the issues by either writing a custom loss function of just taking a weighted sum
+    model = GoogLeNet(11)
+    loss_func = lambda x, y : 0.3*nn.CrossEntropyLoss(x[0],y)+0.3*nn.CrossEntropyLoss(x[1],y)+nn.CrossEntropyLoss(x[2],y) 
     opt = optim.Adam(model.parameters(), lr=0.0001)
     train_loss, test_loss = train(model, train_dl, test_dl, opt, loss_func, epochs)
     
