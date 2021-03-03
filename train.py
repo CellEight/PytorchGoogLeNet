@@ -21,16 +21,19 @@ def train(model, train_dl, test_dl, opt, loss_func, epochs):
     
     for epoch in range(epochs):
         model.train()
-        model.training = False 
+        model.training = True
         for xb, yb in train_dl:
             xb, yb = xb.to(device), yb.to(device)
-            y1 = model(xb)
-            loss = test_loss_func(y1, yb)
+            y1, y2, y3 = model(xb)
+            loss = test_loss_func(y1, yb) + test_loss_func(y2,yb) + test_loss_func(y3,yb)
             train_loss[epoch] = loss.item()
             loss.backward()
-            print(loss)
-            print(model.parameters)
+            #print(['None' if param.grad == None else param.grad.sum() for i, param in enumerate(model.parameters())])
+            #old_parameters = model.parameters()
+            #old_parameters = [param.clone() for param in old_parameters]
             opt.step()
+            #new_parameters = [param for param in model.parameters()]
+            #print([(old_param-new_param).sum() for old_param, new_param in zip(old_parameters, new_parameters)])
             opt.zero_grad()
         with torch.no_grad():
             model.training = False
@@ -72,7 +75,7 @@ if __name__ == "__main__":
     epochs = 25
     model = GoogLeNet(11)
     loss_func = weightedCrossEntropyLoss 
-    opt = optim.SGD(model.parameters(), lr=0.001)
+    opt = optim.Adam(model.parameters(), lr=0.01)
     train_loss, test_loss = train(model, train_dl, test_dl, opt, loss_func, epochs)
     
     # Save Model to pkl file
