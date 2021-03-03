@@ -16,22 +16,25 @@ def train(model, train_dl, test_dl, opt, loss_func, epochs):
     """ train model using using provided datasets, optimizer and loss function """
     train_loss = [0 for i in range(epochs)]
     test_loss = [0 for i in range(epochs)]
-    
+    test_loss_func = nn.CrossEntropyLoss()
     model.to(device)
     
     for epoch in range(epochs):
         model.train()
-        
+        model.training = False 
         for xb, yb in train_dl:
             xb, yb = xb.to(device), yb.to(device)
-            loss = loss_func(model(xb), yb)
+            y1 = model(xb)
+            loss = test_loss_func(y1, yb)
             train_loss[epoch] = loss.item()
             loss.backward()
+            print(loss)
+            print(model.parameters)
             opt.step()
             opt.zero_grad()
-        print("Finished the epoch! Any errors from here on are to do with the test vs train modes") 
         with torch.no_grad():
-            losses, nums = zip(*[(loss_func(model(xb.to(device)),yb.to(device)).item(),len(xb.to(device))) for xb, yb in test_dl])
+            model.training = False
+            losses, nums = zip(*[(test_loss_func(model(xb.to(device)),yb.to(device)).item(),len(xb.to(device))) for xb, yb in test_dl])
             test_loss[epoch] = np.sum(np.multiply(losses, nums)) / np.sum(nums)
             correct = 0
             total = 0
@@ -48,6 +51,12 @@ def train(model, train_dl, test_dl, opt, loss_func, epochs):
     
     return train_loss, test_loss
 
+def weightedCrossEntropyLoss(x,y,weights):
+    l1 = (weights[0]*nn.CrossEntropyLoss()(x[0],y))
+    l2 = (weights[1]*nn.CrossEntropyLoss()(x[1],y))
+    l3 = (weights[2]*nn.CrossEntropyLoss()(x[2],y))
+    return l1 + l2 + l3
+
 if __name__ == "__main__":
     # Define transforms
     transform = transforms.Compose([torchvision.transforms.ToTensor(),transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -62,8 +71,8 @@ if __name__ == "__main__":
     # Some modification will be required here due to the somewhat strange method of training for googlenet
     epochs = 25
     model = GoogLeNet(11)
-    loss_func = lambda x, y : 0.3*nn.CrossEntropyLoss(x[0],y)+0.3*nn.CrossEntropyLoss(x[1],y)+nn.CrossEntropyLoss(x[2],y) 
-    opt = optim.Adam(model.parameters(), lr=0.0001)
+    loss_func = weightedCrossEntropyLoss 
+    opt = optim.SGD(model.parameters(), lr=0.001)
     train_loss, test_loss = train(model, train_dl, test_dl, opt, loss_func, epochs)
     
     # Save Model to pkl file
