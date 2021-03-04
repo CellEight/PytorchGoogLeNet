@@ -25,15 +25,10 @@ def train(model, train_dl, test_dl, opt, loss_func, epochs):
         for xb, yb in train_dl:
             xb, yb = xb.to(device), yb.to(device)
             y1, y2, y3 = model(xb)
-            loss = test_loss_func(y1, yb) + test_loss_func(y2,yb) + test_loss_func(y3,yb)
+            loss = test_loss_func(y3, yb) #+ 0.3*test_loss_func(y2,yb) + test_loss_func(y3,yb)
             train_loss[epoch] = loss.item()
             loss.backward()
-            #print(['None' if param.grad == None else param.grad.sum() for i, param in enumerate(model.parameters())])
-            #old_parameters = model.parameters()
-            #old_parameters = [param.clone() for param in old_parameters]
             opt.step()
-            #new_parameters = [param for param in model.parameters()]
-            #print([(old_param-new_param).sum() for old_param, new_param in zip(old_parameters, new_parameters)])
             opt.zero_grad()
         with torch.no_grad():
             model.training = False
@@ -67,15 +62,15 @@ if __name__ == "__main__":
     # Load training data
     dataset = datasets.ImageFolder('./data', transform=transform) 
     test_data, train_data = random_split(dataset,(4396,1099), generator=torch.Generator().manual_seed(42))
-    train_dl = torch.utils.data.DataLoader(train_data, batch_size=64, shuffle=True, num_workers=4)
-    test_dl = torch.utils.data.DataLoader(test_data, batch_size=64, shuffle=True, num_workers=4)
+    train_dl = torch.utils.data.DataLoader(train_data, batch_size=8, shuffle=True, num_workers=4)
+    test_dl = torch.utils.data.DataLoader(test_data, batch_size=8, shuffle=True, num_workers=4)
     
     # Train Model
     # Some modification will be required here due to the somewhat strange method of training for googlenet
     epochs = 25
     model = GoogLeNet(11)
     loss_func = weightedCrossEntropyLoss 
-    opt = optim.Adam(model.parameters(), lr=0.01)
+    opt = optim.SGD(model.parameters(), lr=0.1,momentum=0.9)
     train_loss, test_loss = train(model, train_dl, test_dl, opt, loss_func, epochs)
     
     # Save Model to pkl file
