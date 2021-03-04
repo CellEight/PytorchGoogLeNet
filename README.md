@@ -6,7 +6,7 @@ This is a Pytorch implementation of the GoogLeNet Architecture that won the 2014
 
 ## The Architecture
 
-![GoogLetNet Architecture](./GoogLeNet.png)
+![GoogLetNet Architecture](./GoogleNet.png)
 
 ## Dataset
 
