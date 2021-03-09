@@ -53,7 +53,7 @@ def weightedCrossEntropyLoss(x,y,weights):
     l1 = (weights[0]*nn.CrossEntropyLoss()(x[0],y))
     l2 = (weights[1]*nn.CrossEntropyLoss()(x[1],y))
     l3 = (weights[2]*nn.CrossEntropyLoss()(x[2],y))
-    return l1 + l2 + l3
+    return 0.3*l1 + 0.3*l2 + l3
 
 if __name__ == "__main__":
     # Define transforms
@@ -67,10 +67,10 @@ if __name__ == "__main__":
     
     # Train Model
     # Some modification will be required here due to the somewhat strange method of training for googlenet
-    epochs = 25
+    epochs = 100 
     model = GoogLeNet(11)
     loss_func = weightedCrossEntropyLoss 
-    opt = optim.SGD(model.parameters(), lr=0.1,momentum=0.9)
+    opt = optim.Adam(model.parameters(), lr=0.0001)
     train_loss, test_loss = train(model, train_dl, test_dl, opt, loss_func, epochs)
     
     # Save Model to pkl file
